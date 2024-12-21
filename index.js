@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
 const app = express();
@@ -30,7 +30,7 @@ async function run() {
 
     // Jobs related apis
     const jobsCollection = client.db('jobPortal').collection('jobs');
-    const jobApplicationCollection = client.db('jobProtal').collection('job_application');
+    const jobApplicationCollection = client.db('jobProtal').collection('job_applications');
 
     app.get('/jobs', async (req, res) => {
             const cursor = jobsCollection.find(); 
@@ -43,6 +43,25 @@ async function run() {
         const query = {_id: new Object(id)}
         const result = await jobsCollection.findOne(query);
         res.send(result);
+    })
+
+    // job application apis
+    app.get('/job-application', async(req, res) => {
+      const email = req.query.email;
+      const query = { applicant_email: email }
+      const result = await jobApplicationCollection.find(query).toArray();
+      // aggregate data
+      for(const application of result){
+        console.log(application .job_id)
+        const query1 = { _id: new ObjectId(application.job_id) }
+        const job = await jobsCollection.findOne(query1);
+        if(job){
+          application.title = job.title;
+          application.company = job.company;
+          app.company_logo = job.company_logo;
+        }
+      }
+      res.send(result);
     })
     
     // job application api
